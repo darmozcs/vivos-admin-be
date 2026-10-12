@@ -112,9 +112,9 @@ class SecurityTest extends AbstractIntegrationTest {
     @Test
     void corsPreflightAllowsConfiguredOrigin() throws Exception {
         mockMvc.perform(options("/clients")
-                        .header("Origin", "http://localhost:5173")
+                        .header("Origin", TEST_ORIGIN)
                         .header("Access-Control-Request-Method", "PATCH"))
                 .andExpect(status().isOk())
-                .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:5173"));
+                .andExpect(header().string("Access-Control-Allow-Origin", TEST_ORIGIN));
     }
 }

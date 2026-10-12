@@ -44,11 +44,13 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
  * darmoz-auth mockeado y un par de llaves RSA propio para firmar JWT reales cuando
  * se quiere probar el decoder (issuer, typ, applicationId).
  */
-@SpringBootTest
+// Origen fijo para los tests de CORS: no depende del default de application.yml (el de produccion).
+@SpringBootTest(properties = "vivos.cors.allowed-origins=" + AbstractIntegrationTest.TEST_ORIGIN)
 @AutoConfigureMockMvc
 @Import(TestcontainersConfiguration.class)
 public abstract class AbstractIntegrationTest {
 
+    protected static final String TEST_ORIGIN = "http://localhost:5173";
     protected static final String APP_ID = "22222222-2222-2222-2222-222222222222";
     protected static final String OTHER_APP_ID = "11111111-1111-1111-1111-111111111111";
 
