@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
@@ -23,8 +24,11 @@ public class LiveService {
     public static final String LIVE_NOT_FOUND = "Vivo no encontrado";
     static final String NO_LIVES = "Todavia no hay vivos";
     static final String ACTION_NOT_ALLOWED = "La acción no está permitida en este estado";
+    static final String LIVE_HAS_SALES = "No se puede eliminar un vivo con ventas";
     /** Plataforma fija, igual que MOCK_PLATFORM. */
     static final String PLATFORM = "Instagram Live";
+    /** Titulo de los vivos creados sin nombre: fecha y hora de inicio. */
+    static final DateTimeFormatter DEFAULT_TITLE_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
     private final LiveRepository liveRepository;
     private final OrderRepository orderRepository;
@@ -80,7 +84,8 @@ public class LiveService {
 
     @Transactional
     public LiveResponse create(UUID storeId, CreateLiveRequest request) {
-        Live live = new Live(storeId, request.title().trim(), PLATFORM);
+        String title = request.title() == null ? "" : request.title().trim();
+        Live live = new Live(storeId, title, PLATFORM);
         return LiveResponse.from(liveRepository.saveAndFlush(live));
     }
 
@@ -94,7 +99,25 @@ public class LiveService {
         }
         // Postgres guarda microsegundos: se trunca a milisegundos para que accumulatedMs cuadre.
         action.apply(live, Instant.now().truncatedTo(ChronoUnit.MILLIS));
+        if (action == LiveAction.START && live.getTitle().isBlank()) {
+            live.setTitle(DEFAULT_TITLE_FORMAT.format(live.getStartedAt().atZone(timezone)));
+        }
         return LiveResponse.from(liveRepository.saveAndFlush(live));
+    }
+
+    /**
+     * Los vivos con ventas (ventas con items) no se borran, para mantener el historial.
+     * Las ventas vacias del vivo se eliminan junto con el.
+     */
+    @Transactional
+    public void delete(UUID storeId, UUID id) {
+        Live live = findLive(storeId, id);
+        if (orderRepository.existsWithItemsByStoreIdAndLiveId(storeId, id)) {
+            throw new ConflictException(LIVE_HAS_SALES);
+        }
+        orderRepository.deleteAll(orderRepository.findByStoreIdAndLiveId(storeId, id));
+        orderRepository.flush();
+        liveRepository.delete(live);
     }
 
     public Live findLive(UUID storeId, UUID id) {

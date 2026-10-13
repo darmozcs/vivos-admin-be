@@ -4,6 +4,7 @@ import com.vivos.api.store.CurrentStore;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -54,5 +55,11 @@ public class LiveController {
     @PostMapping("/{id}/{action}")
     LiveResponse action(@CurrentStore UUID storeId, @PathVariable UUID id, @PathVariable String action) {
         return liveService.applyAction(storeId, id, action);
+    }
+
+    @DeleteMapping("/{id}")
+    ResponseEntity<Void> delete(@CurrentStore UUID storeId, @PathVariable UUID id) {
+        liveService.delete(storeId, id);
+        return ResponseEntity.noContent().build();
     }
 }

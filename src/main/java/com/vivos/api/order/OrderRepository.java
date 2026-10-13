@@ -30,6 +30,14 @@ public interface OrderRepository extends JpaRepository<Order, UUID>, JpaSpecific
             """)
     boolean existsWithItemsByStoreIdAndClientId(@Param("storeId") UUID storeId, @Param("clientId") UUID clientId);
 
+    List<Order> findByStoreIdAndLiveId(UUID storeId, UUID liveId);
+
+    @Query("""
+            select count(o) > 0 from Order o
+            where o.storeId = :storeId and o.liveId = :liveId and o.items is not empty
+            """)
+    boolean existsWithItemsByStoreIdAndLiveId(@Param("storeId") UUID storeId, @Param("liveId") UUID liveId);
+
     @Query("select coalesce(max(o.number), 0) from Order o where o.storeId = :storeId")
     int findMaxNumber(@Param("storeId") UUID storeId);
 
