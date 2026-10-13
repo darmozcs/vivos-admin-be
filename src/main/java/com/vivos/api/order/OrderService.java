@@ -86,8 +86,8 @@ public class OrderService {
             order.setPackageStatus(PackageStatus.PENDING);
         }
         order.replaceItems(request.items().stream()
-                .map(item -> new OrderItem(storeId, item.code().trim(), item.name().trim(),
-                        item.color() == null ? "" : item.color().trim(), item.price(), item.quantity()))
+                .map(item -> new OrderItem(storeId, item.codeOrEmpty(), item.nameOrEmpty(),
+                        item.colorOrEmpty(), item.price(), item.quantityOrDefault()))
                 .toList());
         order.touch();
 

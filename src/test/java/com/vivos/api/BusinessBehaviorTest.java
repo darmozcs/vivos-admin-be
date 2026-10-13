@@ -154,6 +154,29 @@ class BusinessBehaviorTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void orderItemOnlyRequiresPrice() throws Exception {
+        TestStore store = createStore("Tienda solo precio", true);
+        String buyer = idOf(post("/clients"), store, "{\"fullName\":\"Compradora\"}");
+        String liveId = startedLive(store, "Vivo");
+
+        mockMvc.perform(put("/lives/{l}/orders/{c}", liveId, buyer).with(admin(store))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"PENDING\",\"items\":[{\"price\":450}]}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].code").value(""))
+                .andExpect(jsonPath("$.items[0].name").value(""))
+                .andExpect(jsonPath("$.items[0].color").value(""))
+                .andExpect(jsonPath("$.items[0].price").value(450))
+                .andExpect(jsonPath("$.items[0].quantity").value(1));
+
+        mockMvc.perform(put("/lives/{l}/orders/{c}", liveId, buyer).with(admin(store))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"PENDING\",\"items\":[{\"code\":\"7\",\"name\":\"Remera\"}]}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("El precio es obligatorio"));
+    }
+
+    @Test
     void liveLifecycleTransitions() throws Exception {
         TestStore store = createStore("Tienda vivos", true);
 

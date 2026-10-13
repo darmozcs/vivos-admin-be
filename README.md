@@ -135,7 +135,7 @@ con `detail = message`. Si no se puede contactar a darmoz-auth, la respuesta es 
 | `GET /orders/summary` | Los mismos filtros que `GET /orders` | `{orders, units, totalAmount}` sobre esas mismas ventas, de cualquier estado (para excluir canceladas, filtrar por `status`): cantidad de ventas, suma de cantidades y suma de precio × cantidad |
 | `PATCH /orders/{id}` | `{status?, packageStatus?}` | `Order` |
 | `GET /lives/{liveId}/orders` | — | `[Order]`: todas las ventas del vivo (incluidas las vacías), por `number` |
-| `PUT /lives/{liveId}/orders/{clientId}` | `{status, packageStatus?, items:[{code,name,color?,price,quantity}]}` | `Order`. Hace upsert por vivo + clienta y asigna `number` correlativo por tienda. Responde `409` si el vivo no comenzó |
+| `PUT /lives/{liveId}/orders/{clientId}` | `{status, packageStatus?, items:[{code?,name?,color?,price,quantity?}]}`. De cada item solo `price` es obligatorio: los textos faltantes se guardan vacíos y `quantity` vale 1 por defecto | `Order`. Hace upsert por vivo + clienta y asigna `number` correlativo por tienda. Responde `409` si el vivo no comenzó |
 
 Los totales de `LiveSummary` (`buyers`, `units` y `totalAmount`) se calculan como en el mock: solo
 cuentan las ventas con items que no están canceladas.
