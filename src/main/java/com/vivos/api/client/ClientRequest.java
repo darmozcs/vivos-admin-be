@@ -21,6 +21,9 @@ public record ClientRequest(
         @Size(max = 30, message = "El telefono no puede superar 30 caracteres")
         String phone,
 
+        @Size(max = 150, message = "El correo no puede superar 150 caracteres")
+        String email,
+
         @Size(max = 255, message = "La direccion no puede superar 255 caracteres")
         String address,
 

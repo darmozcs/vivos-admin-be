@@ -21,7 +21,7 @@ public class OrderService {
 
     static final String ORDER_NOT_FOUND = "Venta no encontrada";
     static final String LIVE_NOT_STARTED = "El vivo todavía no comenzó";
-    private static final Sort LIST_ORDER = Sort.by(Sort.Direction.DESC, "number");
+    private static final Sort LIST_ORDER = Sort.by(Sort.Direction.DESC, "liveNumber", "number");
 
     private final OrderRepository orderRepository;
     private final StoreRepository storeRepository;
@@ -39,7 +39,7 @@ public class OrderService {
         this.timezone = ZoneId.of(timezone);
     }
 
-    /** Ventas con items que cumplen todos los filtros, de numero mayor a menor. */
+    /** Ventas con items que cumplen todos los filtros, de la mas nueva a la mas vieja (vivo y numero). */
     @Transactional(readOnly = true)
     public List<OrderResponse> list(UUID storeId, OrderFilter filter) {
         return orderRepository.findAll(OrderSpecifications.matching(storeId, filter, timezone), LIST_ORDER).stream()
@@ -64,7 +64,7 @@ public class OrderService {
 
     /**
      * Crea o reemplaza la venta de la clienta en el vivo (upsert por vivo + clienta).
-     * Al crear asigna el siguiente numero correlativo de la tienda; para eso bloquea la fila
+     * Al crear asigna el siguiente numero correlativo del vivo; para eso bloquea la fila
      * de la tienda durante la transaccion.
      */
     @Transactional
@@ -77,7 +77,8 @@ public class OrderService {
 
         storeRepository.lockById(storeId);
         Order order = orderRepository.findByStoreIdAndLiveIdAndClientId(storeId, liveId, clientId)
-                .orElseGet(() -> new Order(storeId, orderRepository.findMaxNumber(storeId) + 1, liveId, clientId));
+                .orElseGet(() -> new Order(storeId, live.getNumber(),
+                        orderRepository.findMaxNumber(storeId, liveId) + 1, liveId, clientId));
 
         order.setStatus(request.status());
         if (request.packageStatus() != null) {

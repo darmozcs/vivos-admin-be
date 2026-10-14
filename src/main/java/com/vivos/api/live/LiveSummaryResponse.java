@@ -9,6 +9,7 @@ import java.util.UUID;
 /** {@code LiveSummary} del front: el vivo mas los totales de venta calculados por el servidor. */
 public record LiveSummaryResponse(
         UUID id,
+        int number,
         String title,
         String platform,
         LiveStatus status,
@@ -26,6 +27,7 @@ public record LiveSummaryResponse(
         LiveTotals safe = totals != null ? totals : LiveTotals.empty(live.getId());
         return new LiveSummaryResponse(
                 live.getId(),
+                live.getNumber(),
                 live.getTitle(),
                 live.getPlatform(),
                 live.getStatus(),

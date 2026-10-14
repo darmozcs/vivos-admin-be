@@ -4,6 +4,7 @@ import com.vivos.api.common.ConflictException;
 import com.vivos.api.common.NotFoundException;
 import com.vivos.api.order.LiveTotals;
 import com.vivos.api.order.OrderRepository;
+import com.vivos.api.store.StoreRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,12 +33,14 @@ public class LiveService {
 
     private final LiveRepository liveRepository;
     private final OrderRepository orderRepository;
+    private final StoreRepository storeRepository;
     private final ZoneId timezone;
 
-    LiveService(LiveRepository liveRepository, OrderRepository orderRepository,
+    LiveService(LiveRepository liveRepository, OrderRepository orderRepository, StoreRepository storeRepository,
                 @Value("${vivos.timezone:America/Montevideo}") String timezone) {
         this.liveRepository = liveRepository;
         this.orderRepository = orderRepository;
+        this.storeRepository = storeRepository;
         this.timezone = ZoneId.of(timezone);
     }
 
@@ -82,10 +85,12 @@ public class LiveService {
         return LiveSummaryResponse.from(live, totals);
     }
 
+    /** Asigna el siguiente numero correlativo de la tienda; bloquea la fila de la tienda durante la transaccion. */
     @Transactional
     public LiveResponse create(UUID storeId, CreateLiveRequest request) {
         String title = request.title() == null ? "" : request.title().trim();
-        Live live = new Live(storeId, title, PLATFORM);
+        storeRepository.lockById(storeId);
+        Live live = new Live(storeId, liveRepository.findMaxNumber(storeId) + 1, title, PLATFORM);
         return LiveResponse.from(liveRepository.saveAndFlush(live));
     }
 

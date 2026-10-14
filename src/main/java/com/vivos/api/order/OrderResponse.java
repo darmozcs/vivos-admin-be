@@ -8,6 +8,7 @@ import java.util.UUID;
 /** {@code Order} del front (models/order.ts). */
 public record OrderResponse(
         UUID id,
+        int liveNumber,
         int number,
         UUID liveId,
         UUID clientId,
@@ -24,6 +25,7 @@ public record OrderResponse(
     public static OrderResponse from(Order order) {
         return new OrderResponse(
                 order.getId(),
+                order.getLiveNumber(),
                 order.getNumber(),
                 order.getLiveId(),
                 order.getClientId(),

@@ -25,6 +25,10 @@ public class Live {
     @Column(name = "store_id", nullable = false, updatable = false)
     private UUID storeId;
 
+    /** Numero correlativo por tienda. */
+    @Column(nullable = false, updatable = false)
+    private int number;
+
     @Column(nullable = false, length = 120)
     private String title;
 
@@ -58,8 +62,9 @@ public class Live {
     protected Live() {
     }
 
-    public Live(UUID storeId, String title, String platform) {
+    public Live(UUID storeId, int number, String title, String platform) {
         this.storeId = storeId;
+        this.number = number;
         this.title = title;
         this.platform = platform;
     }
@@ -82,6 +87,10 @@ public class Live {
 
     public UUID getStoreId() {
         return storeId;
+    }
+
+    public int getNumber() {
+        return number;
     }
 
     public String getTitle() {

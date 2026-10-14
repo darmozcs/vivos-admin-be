@@ -56,11 +56,12 @@ class BusinessBehaviorTest extends AbstractIntegrationTest {
 
         mockMvc.perform(post("/clients").with(admin(store))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"fullName\":\"  Lucía Fernández \",\"account\":\"luciaf\",\"phone\":\" 099 123 456 \"}"))
+                        .content("{\"fullName\":\"  Lucía Fernández \",\"account\":\"luciaf\",\"phone\":\" 099 123 456 \",\"email\":\" lucia@mail.com \"}"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.fullName").value("Lucía Fernández"))
                 .andExpect(jsonPath("$.account").value("@luciaf"))
                 .andExpect(jsonPath("$.phone").value("099 123 456"))
+                .andExpect(jsonPath("$.email").value("lucia@mail.com"))
                 .andExpect(jsonPath("$.address").value(""))
                 .andExpect(jsonPath("$.createdAt").value(org.hamcrest.Matchers.matchesPattern("\\d{4}-\\d{2}-\\d{2}T.*Z")))
                 .andExpect(jsonPath("$.id").value(org.hamcrest.Matchers.matchesPattern("[0-9a-f-]{36}")));
@@ -71,6 +72,15 @@ class BusinessBehaviorTest extends AbstractIntegrationTest {
                         .content("{\"fullName\":\"  \"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.detail").value("El nombre es obligatorio"));
+        mockMvc.perform(post("/clients").with(admin(store))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"fullName\":\"Sin arroba\",\"email\":\"lucia.mail.com\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("El correo no es valido"));
+        mockMvc.perform(get("/clients").param("email", "LUCIA@").with(admin(store)))
+                .andExpect(jsonPath("$", hasSize(1)));
+        mockMvc.perform(get("/clients").param("search", "MAIL.COM").with(admin(store)))
+                .andExpect(jsonPath("$", hasSize(1)));
 
         mockMvc.perform(get("/clients").param("search", "LUCÍA").with(admin(store)))
                 .andExpect(jsonPath("$", hasSize(1)))
@@ -86,7 +96,8 @@ class BusinessBehaviorTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.fullName").value("Martina P."))
                 .andExpect(jsonPath("$.account").value(""))
-                .andExpect(jsonPath("$.address").value("Bvar. Artigas 860"));
+                .andExpect(jsonPath("$.address").value("Bvar. Artigas 860"))
+                .andExpect(jsonPath("$.email").value(""));
 
         mockMvc.perform(delete("/clients/{id}", otherId).with(admin(store)))
                 .andExpect(status().isNoContent());
@@ -253,6 +264,7 @@ class BusinessBehaviorTest extends AbstractIntegrationTest {
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.number").value(1))
+                .andExpect(jsonPath("$.liveNumber").value(2))
                 .andExpect(jsonPath("$.liveId").value(liveId))
                 .andExpect(jsonPath("$.clientId").value(c1))
                 .andExpect(jsonPath("$.packageStatus").value("PENDING"))
@@ -323,6 +335,18 @@ class BusinessBehaviorTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$", hasSize(2)));
         mockMvc.perform(get("/lives/{id}/orders", liveId).with(admin(store)))
                 .andExpect(jsonPath("$", hasSize(3)));
+
+        // Los vivos se numeran por tienda y las ventas dentro de su vivo: el vivo 3 arranca en 1.
+        mockMvc.perform(get("/lives/{id}", notStarted).with(admin(store)))
+                .andExpect(jsonPath("$.number").value(1));
+        String secondLive = startedLive(store, "Otro vivo ventas");
+        mockMvc.perform(get("/lives/{id}", secondLive).with(admin(store)))
+                .andExpect(jsonPath("$.number").value(3));
+        mockMvc.perform(put("/lives/{l}/orders/{c}", secondLive, c1).with(admin(store))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"PENDING\",\"items\":[]}"))
+                .andExpect(jsonPath("$.liveNumber").value(3))
+                .andExpect(jsonPath("$.number").value(1));
 
         // La numeracion es por tienda: la otra tienda arranca en 1.
         String otherClient = idOf(post("/clients"), otherStore, "{\"fullName\":\"Otra\"}");

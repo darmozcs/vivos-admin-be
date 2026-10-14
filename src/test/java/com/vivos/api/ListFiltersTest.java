@@ -172,9 +172,9 @@ class ListFiltersTest extends AbstractIntegrationTest {
         String otherLive = startedLive(other, "Vivo Primavera");
         String otherOrder = order(other, otherLive, otherClient, "PAID", item("999", 3), "2026-10-10T12:00:00Z");
 
-        // Sin filtros: solo ventas con items, por numero desc.
+        // Sin filtros: solo ventas con items, por vivo y numero desc (invierno es el vivo 2).
         getAs(store, "/orders").andExpect(status().isOk())
-                .andExpect(jsonPath("$[*].id", contains(o0, o3, o2, o1)));
+                .andExpect(jsonPath("$[*].id", contains(o3, o0, o2, o1)));
 
         // Fechas: dias completos en America/Montevideo, inclusive.
         getAs(store, "/orders", "from", "2026-10-10", "to", "2026-10-10")
@@ -196,7 +196,7 @@ class ListFiltersTest extends AbstractIntegrationTest {
         getAs(store, "/orders", "clientId", ana).andExpect(jsonPath("$[*].id", contains(o3, o1)));
         getAs(store, "/orders", "status", "PAID").andExpect(jsonPath("$[*].id", contains(o0, o2)));
         getAs(store, "/orders", "packageStatus", "SHIPPED").andExpect(jsonPath("$[*].id", contains(o2)));
-        getAs(store, "/orders", "packageStatus", "PENDING").andExpect(jsonPath("$[*].id", contains(o0, o3, o1)));
+        getAs(store, "/orders", "packageStatus", "PENDING").andExpect(jsonPath("$[*].id", contains(o3, o0, o1)));
 
         // Combinados.
         getAs(store, "/orders", "liveTitle", "primavera", "status", "PAID", "from", "2026-10-10")

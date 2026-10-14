@@ -27,16 +27,17 @@ final class ClientSpecifications {
             account = account.substring(ACCOUNT_PREFIX.length());
         }
         String phone = normalize(filter.phone());
+        String email = normalize(filter.email());
         String accountTerm = account;
 
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(cb.equal(root.get("storeId"), storeId));
             if (!search.isEmpty()) {
-                // Igual que el mock: busca el texto en "fullName account phone".
-                Expression<String> text = cb.concat(cb.concat(cb.concat(cb.concat(
+                // Igual que el mock: busca el texto en "fullName account phone email".
+                Expression<String> text = cb.concat(cb.concat(cb.concat(cb.concat(cb.concat(cb.concat(
                         root.<String>get("fullName"), " "), root.<String>get("account")), " "),
-                        root.<String>get("phone"));
+                        root.<String>get("phone")), " "), root.<String>get("email"));
                 predicates.add(contains(cb, text, search));
             }
             if (!fullName.isEmpty()) {
@@ -47,6 +48,9 @@ final class ClientSpecifications {
             }
             if (!phone.isEmpty()) {
                 predicates.add(contains(cb, root.get("phone"), phone));
+            }
+            if (!email.isEmpty()) {
+                predicates.add(contains(cb, root.get("email"), email));
             }
             if (filter.department() != null) {
                 predicates.add(cb.equal(root.get("department"), filter.department()));

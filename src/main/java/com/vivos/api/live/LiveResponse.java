@@ -6,6 +6,7 @@ import java.util.UUID;
 /** {@code Live} del front (models/live.ts). */
 public record LiveResponse(
         UUID id,
+        int number,
         String title,
         String platform,
         LiveStatus status,
@@ -19,6 +20,7 @@ public record LiveResponse(
     public static LiveResponse from(Live live) {
         return new LiveResponse(
                 live.getId(),
+                live.getNumber(),
                 live.getTitle(),
                 live.getPlatform(),
                 live.getStatus(),

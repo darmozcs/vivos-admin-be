@@ -34,6 +34,9 @@ public class Client {
     @Column(nullable = false, length = 30)
     private String phone = "";
 
+    @Column(nullable = false, length = 150)
+    private String email = "";
+
     @Column(nullable = false, length = 255)
     private String address = "";
 
@@ -100,6 +103,14 @@ public class Client {
 
     public void setPhone(String phone) {
         this.phone = phone;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     public String getAddress() {

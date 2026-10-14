@@ -33,10 +33,11 @@ public class ClientController {
                               @RequestParam(required = false) String fullName,
                               @RequestParam(required = false) String account,
                               @RequestParam(required = false) String phone,
+                              @RequestParam(required = false) String email,
                               @RequestParam(required = false) Department department,
                               @RequestParam(required = false) DeliveryType deliveryType) {
         return clientService.list(storeId,
-                new ClientFilter(search, fullName, account, phone, department, deliveryType));
+                new ClientFilter(search, fullName, account, phone, email, department, deliveryType));
     }
 
     @PostMapping
