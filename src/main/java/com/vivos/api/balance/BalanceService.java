@@ -4,7 +4,10 @@ import com.vivos.api.common.BadRequestException;
 import com.vivos.api.live.LiveFilter;
 import com.vivos.api.live.LiveService;
 import com.vivos.api.live.LiveStatus;
+import com.vivos.api.live.LiveSummaryResponse;
 import com.vivos.api.order.Amounts;
+import com.vivos.api.order.LiveTotals;
+import com.vivos.api.order.OrderRepository;
 import com.vivos.api.trade.TradeFilter;
 import com.vivos.api.trade.TradeService;
 import com.vivos.api.trade.TradeStatus;
@@ -16,11 +19,14 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Une vivos finalizados, ventas vendidas y compras compradas en una sola lista.
- * Un vivo cuenta como una venta por su total recaudado (ventas no canceladas).
+ * Un vivo cuenta como una venta por su total recaudado (solo ventas pagadas).
  */
 @Service
 public class BalanceService {
@@ -31,10 +37,12 @@ public class BalanceService {
 
     private final TradeService tradeService;
     private final LiveService liveService;
+    private final OrderRepository orderRepository;
 
-    BalanceService(TradeService tradeService, LiveService liveService) {
+    BalanceService(TradeService tradeService, LiveService liveService, OrderRepository orderRepository) {
         this.tradeService = tradeService;
         this.liveService = liveService;
+        this.orderRepository = orderRepository;
     }
 
     @Transactional(readOnly = true)
@@ -65,13 +73,22 @@ public class BalanceService {
                 .toList();
     }
 
+    /** Vivos finalizados con su total recaudado: solo las ventas pagadas (plata y prendas). */
     private List<BalanceEntryResponse> endedLives(UUID storeId, BalanceFilter filter) {
         LiveFilter liveFilter = new LiveFilter(filter.from(), filter.to(),
                 null, null, null, null, null, null, null, null, null);
-        return liveService.list(storeId, liveFilter).stream()
+        List<LiveSummaryResponse> lives = liveService.list(storeId, liveFilter).stream()
                 .filter(live -> live.status() == LiveStatus.ENDED)
-                .map(live -> new BalanceEntryResponse(
-                        live.id(), BalanceEntryType.LIVE, live.units(), live.totalAmount(), live.createdAt()))
+                .toList();
+        Map<UUID, LiveTotals> collected = orderRepository
+                .collectedTotalsByLive(storeId, lives.stream().map(LiveSummaryResponse::id).toList()).stream()
+                .collect(Collectors.toMap(LiveTotals::liveId, Function.identity()));
+        return lives.stream()
+                .map(live -> {
+                    LiveTotals paid = collected.getOrDefault(live.id(), LiveTotals.empty(live.id()));
+                    return new BalanceEntryResponse(
+                            live.id(), BalanceEntryType.LIVE, paid.units(), paid.totalAmount(), live.createdAt());
+                })
                 .toList();
     }
 

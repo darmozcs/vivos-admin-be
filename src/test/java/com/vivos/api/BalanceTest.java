@@ -27,14 +27,27 @@ class BalanceTest extends AbstractIntegrationTest {
         return JsonPath.read(response, "$.id");
     }
 
-    /** Vivo con una venta de {@code quantity} prendas a {@code price}; se termina si {@code end}. */
-    private void liveWithSale(TestStore store, String clientId, int quantity, int price, boolean end) throws Exception {
-        String liveId = idOf(post("/lives"), store, "{\"title\":\"Vivo\"}");
-        mockMvc.perform(post("/lives/{id}/start", liveId).with(admin(store))).andExpect(status().isOk());
+    private void sale(TestStore store, String liveId, String clientId, String status, int quantity, int price)
+            throws Exception {
         mockMvc.perform(put("/lives/{l}/orders/{c}", liveId, clientId).with(admin(store))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"status\":\"PAID\",\"items\":[{\"price\":" + price + ",\"quantity\":" + quantity + "}]}"))
+                        .content("{\"status\":\"" + status + "\",\"items\":[{\"price\":" + price
+                                + ",\"quantity\":" + quantity + "}]}"))
                 .andExpect(status().isOk());
+    }
+
+    /**
+     * Vivo con una venta pagada de {@code quantity} prendas a {@code price} y, si viene
+     * {@code pendingClientId}, otra pendiente que no cuenta en el total recaudado.
+     */
+    private void liveWithSale(TestStore store, String clientId, int quantity, int price, boolean end,
+                              String pendingClientId) throws Exception {
+        String liveId = idOf(post("/lives"), store, "{\"title\":\"Vivo\"}");
+        mockMvc.perform(post("/lives/{id}/start", liveId).with(admin(store))).andExpect(status().isOk());
+        sale(store, liveId, clientId, "PAID", quantity, price);
+        if (pendingClientId != null) {
+            sale(store, liveId, pendingClientId, "PENDING", 7, 7777);
+        }
         if (end) {
             mockMvc.perform(post("/lives/{id}/end", liveId).with(admin(store))).andExpect(status().isOk());
         }
@@ -53,8 +66,10 @@ class BalanceTest extends AbstractIntegrationTest {
         String clientId = idOf(post("/clients"), store, "{\"fullName\":\"Clienta\"}");
         String sellerId = idOf(post("/sellers"), store, "{\"fullName\":\"Vendedor\"}");
 
-        liveWithSale(store, clientId, 3, 500, true);
-        liveWithSale(store, clientId, 9, 9999, false);
+        String pendingClient = idOf(post("/clients"), store, "{\"fullName\":\"Debe\"}");
+        // Del vivo solo cuenta lo pagado: la venta pendiente (7 prendas, $54439) queda afuera.
+        liveWithSale(store, clientId, 3, 500, true, pendingClient);
+        liveWithSale(store, clientId, 9, 9999, false, null);
         trade(store, "SALE", "SOLD", 10, 2000, clientId);
         trade(store, "SALE", "PUBLISHED", 99, 9999, clientId);
         trade(store, "PURCHASE", "PURCHASED", 40, 4000, sellerId);

@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -54,5 +55,22 @@ public interface OrderRepository extends JpaRepository<Order, UUID>, JpaSpecific
 
     default List<LiveTotals> totalsByLive(UUID storeId, UUID liveId) {
         return totalsRows(storeId, liveId, OrderStatus.CANCELLED).stream().map(LiveTotals::fromRow).toList();
+    }
+
+    @Query("""
+            select o.liveId, count(distinct o.id), sum(i.quantity), sum(i.price * i.quantity)
+            from OrderItem i join i.order o
+            where o.storeId = :storeId and o.liveId in :liveIds and o.status = :status
+            group by o.liveId
+            """)
+    List<Object[]> totalsRowsWithStatus(@Param("storeId") UUID storeId, @Param("liveIds") Collection<UUID> liveIds,
+                                        @Param("status") OrderStatus status);
+
+    /** "Total recaudado" de cada vivo: solo las ventas pagadas. Los vivos sin ventas pagadas no vienen. */
+    default List<LiveTotals> collectedTotalsByLive(UUID storeId, Collection<UUID> liveIds) {
+        if (liveIds.isEmpty()) {
+            return List.of();
+        }
+        return totalsRowsWithStatus(storeId, liveIds, OrderStatus.PAID).stream().map(LiveTotals::fromRow).toList();
     }
 }
