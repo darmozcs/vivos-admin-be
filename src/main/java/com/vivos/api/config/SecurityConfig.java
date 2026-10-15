@@ -69,7 +69,7 @@ public class SecurityConfig {
                         .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/admin/**").hasRole(ROLE_SUPER_ADMIN)
-                        .requestMatchers("/settings", "/clients/**", "/sellers/**", "/trades/**", "/lives/**",
+                        .requestMatchers("/settings", "/clients/**", "/sellers/**", "/trades/**", "/balance", "/lives/**",
                                 "/orders/**").hasRole(ROLE_ADMIN)
                         .anyRequest().authenticated())
                 .exceptionHandling(ex -> ex

@@ -6,6 +6,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -325,11 +326,12 @@ class BusinessBehaviorTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$[0].number").value(3))
                 .andExpect(jsonPath("$[2].number").value(1));
 
-        // Venta vaciada: sigue en el vivo pero no en GET /orders.
+        // Venta vaciada: sigue en el vivo pero no en GET /orders, y pierde su numero de paquete.
         mockMvc.perform(put("/lives/{l}/orders/{c}", liveId, c2).with(admin(store))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"status\":\"PENDING\",\"items\":[]}"))
                 .andExpect(jsonPath("$.packageStatus").value("PREPARED"))
+                .andExpect(jsonPath("$.number").value(nullValue()))
                 .andExpect(jsonPath("$.items", hasSize(0)));
         mockMvc.perform(get("/orders").with(admin(store)))
                 .andExpect(jsonPath("$", hasSize(2)));
@@ -346,6 +348,10 @@ class BusinessBehaviorTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"status\":\"PENDING\",\"items\":[]}"))
                 .andExpect(jsonPath("$.liveNumber").value(3))
+                .andExpect(jsonPath("$.number").value(nullValue()));
+        mockMvc.perform(put("/lives/{l}/orders/{c}", secondLive, c1).with(admin(store))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"PENDING\",\"items\":[{\"price\":100}]}"))
                 .andExpect(jsonPath("$.number").value(1));
 
         // La numeracion es por tienda: la otra tienda arranca en 1.
@@ -353,7 +359,7 @@ class BusinessBehaviorTest extends AbstractIntegrationTest {
         String otherLive = startedLive(otherStore, "Vivo otra");
         mockMvc.perform(put("/lives/{l}/orders/{c}", otherLive, otherClient).with(admin(otherStore))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"status\":\"PENDING\",\"items\":[]}"))
+                        .content("{\"status\":\"PENDING\",\"items\":[{\"price\":100}]}"))
                 .andExpect(jsonPath("$.number").value(1));
 
         mockMvc.perform(patch("/orders/{id}", java.util.UUID.randomUUID()).with(admin(store))

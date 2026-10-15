@@ -9,7 +9,7 @@ import java.util.UUID;
 public record OrderResponse(
         UUID id,
         int liveNumber,
-        int number,
+        Integer number,
         UUID liveId,
         UUID clientId,
         OrderStatus status,

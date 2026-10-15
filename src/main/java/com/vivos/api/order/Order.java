@@ -35,9 +35,9 @@ public class Order {
     @Column(name = "live_number", nullable = false, updatable = false)
     private int liveNumber;
 
-    /** Numero correlativo dentro del vivo. */
-    @Column(nullable = false, updatable = false)
-    private int number;
+    /** Numero de paquete dentro del vivo; null mientras la venta no tenga items. */
+    @Column
+    private Integer number;
 
     @Column(name = "live_id", nullable = false, updatable = false)
     private UUID liveId;
@@ -66,10 +66,9 @@ public class Order {
     protected Order() {
     }
 
-    public Order(UUID storeId, int liveNumber, int number, UUID liveId, UUID clientId) {
+    public Order(UUID storeId, int liveNumber, UUID liveId, UUID clientId) {
         this.storeId = storeId;
         this.liveNumber = liveNumber;
-        this.number = number;
         this.liveId = liveId;
         this.clientId = clientId;
     }
@@ -113,8 +112,12 @@ public class Order {
         return liveNumber;
     }
 
-    public int getNumber() {
+    public Integer getNumber() {
         return number;
+    }
+
+    public void setNumber(Integer number) {
+        this.number = number;
     }
 
     public UUID getLiveId() {

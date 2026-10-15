@@ -38,8 +38,10 @@ public interface OrderRepository extends JpaRepository<Order, UUID>, JpaSpecific
             """)
     boolean existsWithItemsByStoreIdAndLiveId(@Param("storeId") UUID storeId, @Param("liveId") UUID liveId);
 
-    @Query("select coalesce(max(o.number), 0) from Order o where o.storeId = :storeId and o.liveId = :liveId")
-    int findMaxNumber(@Param("storeId") UUID storeId, @Param("liveId") UUID liveId);
+    /** Si otra venta del vivo ya usa ese numero de paquete. */
+    boolean existsByLiveIdAndNumberAndIdNot(UUID liveId, Integer number, UUID id);
+
+    boolean existsByLiveIdAndNumber(UUID liveId, Integer number);
 
     @Query("""
             select o.liveId, count(distinct o.id), sum(i.quantity), sum(i.price * i.quantity)

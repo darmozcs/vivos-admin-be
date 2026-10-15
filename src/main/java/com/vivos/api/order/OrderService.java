@@ -21,6 +21,8 @@ public class OrderService {
 
     static final String ORDER_NOT_FOUND = "Venta no encontrada";
     static final String LIVE_NOT_STARTED = "El vivo todavía no comenzó";
+    static final String ORDER_WITHOUT_ITEMS = "La venta no tiene compras";
+    static final String PACKAGE_NUMBER_IN_USE = "Ese número de paquete ya está en uso en este vivo";
     private static final Sort LIST_ORDER = Sort.by(Sort.Direction.DESC, "liveNumber", "number");
 
     private final OrderRepository orderRepository;
@@ -64,8 +66,8 @@ public class OrderService {
 
     /**
      * Crea o reemplaza la venta de la clienta en el vivo (upsert por vivo + clienta).
-     * Al crear asigna el siguiente numero correlativo del vivo; para eso bloquea la fila
-     * de la tienda durante la transaccion.
+     * Con su primera compra la venta recibe el siguiente numero de paquete del vivo; si se queda
+     * sin items lo pierde. Bloquea la fila de la tienda para que dos ventas no tomen el mismo numero.
      */
     @Transactional
     public OrderResponse save(UUID storeId, UUID liveId, UUID clientId, SaveOrderRequest request) {
@@ -77,8 +79,7 @@ public class OrderService {
 
         storeRepository.lockById(storeId);
         Order order = orderRepository.findByStoreIdAndLiveIdAndClientId(storeId, liveId, clientId)
-                .orElseGet(() -> new Order(storeId, live.getNumber(),
-                        orderRepository.findMaxNumber(storeId, liveId) + 1, liveId, clientId));
+                .orElseGet(() -> new Order(storeId, live.getNumber(), liveId, clientId));
 
         order.setStatus(request.status());
         if (request.packageStatus() != null) {
@@ -90,9 +91,36 @@ public class OrderService {
                 .map(item -> new OrderItem(storeId, item.codeOrEmpty(), item.nameOrEmpty(),
                         item.colorOrEmpty(), item.price(), item.quantityOrDefault()))
                 .toList());
+        if (order.getItems().isEmpty()) {
+            order.setNumber(null);
+        } else if (order.getNumber() == null) {
+            order.setNumber(nextFreePackageNumber(live));
+        }
         order.touch();
 
         return OrderResponse.from(orderRepository.saveAndFlush(order));
+    }
+
+    /** Numero de paquete puesto a mano: unico en el vivo y solo para ventas con compras. */
+    private void changePackageNumber(UUID storeId, Order order, int number) {
+        if (order.getItems().isEmpty()) {
+            throw new ConflictException(ORDER_WITHOUT_ITEMS);
+        }
+        storeRepository.lockById(storeId);
+        if (orderRepository.existsByLiveIdAndNumberAndIdNot(order.getLiveId(), number, order.getId())) {
+            throw new ConflictException(PACKAGE_NUMBER_IN_USE);
+        }
+        order.setNumber(number);
+        liveService.findLive(storeId, order.getLiveId()).reservePackageNumber(number);
+    }
+
+    /** Siguiente numero del contador del vivo, salteando los que se pusieron a mano. */
+    private int nextFreePackageNumber(Live live) {
+        int candidate = live.takePackageNumber();
+        while (orderRepository.existsByLiveIdAndNumber(live.getId(), candidate)) {
+            candidate = live.takePackageNumber();
+        }
+        return candidate;
     }
 
     @Transactional
@@ -104,6 +132,9 @@ public class OrderService {
         }
         if (request.packageStatus() != null) {
             order.setPackageStatus(request.packageStatus());
+        }
+        if (request.number() != null && !request.number().equals(order.getNumber())) {
+            changePackageNumber(storeId, order, request.number());
         }
         order.touch();
         return OrderResponse.from(orderRepository.saveAndFlush(order));

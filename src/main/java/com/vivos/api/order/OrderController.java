@@ -49,7 +49,7 @@ public class OrderController {
 
     @PatchMapping("/orders/{id}")
     OrderResponse update(@CurrentStore UUID storeId, @PathVariable UUID id,
-                         @RequestBody UpdateOrderRequest request) {
+                         @Valid @RequestBody UpdateOrderRequest request) {
         return orderService.update(storeId, id, request);
     }
 

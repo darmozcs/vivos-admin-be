@@ -29,6 +29,10 @@ public class Live {
     @Column(nullable = false, updatable = false)
     private int number;
 
+    /** Proximo numero de paquete a asignar. Solo sube: un numero liberado no se reusa. */
+    @Column(name = "next_package_number", nullable = false)
+    private int nextPackageNumber = 1;
+
     @Column(nullable = false, length = 120)
     private String title;
 
@@ -91,6 +95,16 @@ public class Live {
 
     public int getNumber() {
         return number;
+    }
+
+    /** Devuelve el siguiente numero de paquete del vivo y avanza el contador. */
+    public int takePackageNumber() {
+        return nextPackageNumber++;
+    }
+
+    /** Un numero puesto a mano no se vuelve a asignar: el contador sigue despues de el. */
+    public void reservePackageNumber(int packageNumber) {
+        nextPackageNumber = Math.max(nextPackageNumber, packageNumber + 1);
     }
 
     public String getTitle() {
