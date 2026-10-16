@@ -7,10 +7,12 @@ import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 
 /**
- * Body de POST y PATCH /trades. Una venta lleva {@code sellerId} y una compra {@code clientId}.
+ * Body de POST y PATCH /trades. Una venta lleva {@code clientId}; una compra o un pago, {@code sellerId}.
+ * {@code quantity} es obligatoria en ventas y compras y se ignora en los pagos.
  * El PATCH reemplaza todos los campos, pero el tipo no se puede cambiar.
  */
 public record TradeRequest(
@@ -21,7 +23,6 @@ public record TradeRequest(
         @NotNull(message = "El estado es obligatorio")
         TradeStatus status,
 
-        @NotNull(message = "La cantidad es obligatoria")
         @Positive(message = "La cantidad debe ser al menos 1")
         Integer quantity,
 
@@ -35,7 +36,10 @@ public record TradeRequest(
 
         UUID sellerId,
 
-        UUID clientId
+        UUID clientId,
+
+        /** Etiquetas del movimiento; ausente = sin etiquetas. */
+        List<UUID> tagIds
 ) {
 
     String noteOrEmpty() {

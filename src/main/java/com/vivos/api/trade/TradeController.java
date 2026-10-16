@@ -37,8 +37,9 @@ public class TradeController {
                            @RequestParam(required = false) TradeType type,
                            @RequestParam(required = false) TradeStatus status,
                            @RequestParam(required = false) UUID sellerId,
-                           @RequestParam(required = false) UUID clientId) {
-        return tradeService.list(storeId, new TradeFilter(from, to, search, type, status, sellerId, clientId));
+                           @RequestParam(required = false) UUID clientId,
+                           @RequestParam(required = false) List<UUID> tagIds) {
+        return tradeService.list(storeId, new TradeFilter(from, to, search, type, status, sellerId, clientId, tagIds));
     }
 
     /** Mismos filtros que GET /trades. */
@@ -50,8 +51,9 @@ public class TradeController {
                                @RequestParam(required = false) TradeType type,
                                @RequestParam(required = false) TradeStatus status,
                                @RequestParam(required = false) UUID sellerId,
-                               @RequestParam(required = false) UUID clientId) {
-        return tradeService.summary(storeId, new TradeFilter(from, to, search, type, status, sellerId, clientId));
+                               @RequestParam(required = false) UUID clientId,
+                               @RequestParam(required = false) List<UUID> tagIds) {
+        return tradeService.summary(storeId, new TradeFilter(from, to, search, type, status, sellerId, clientId, tagIds));
     }
 
     @PostMapping

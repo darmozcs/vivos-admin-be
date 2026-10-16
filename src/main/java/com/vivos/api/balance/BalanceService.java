@@ -25,7 +25,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * Une vivos finalizados, ventas vendidas y compras compradas en una sola lista.
+ * Une vivos finalizados, ventas vendidas, compras compradas y pagos pagados en una sola lista.
  * Un vivo cuenta como una venta por su total recaudado (solo ventas pagadas).
  */
 @Service
@@ -57,6 +57,9 @@ public class BalanceService {
         if (filter.includes(BalanceEntryType.PURCHASE)) {
             entries.addAll(trades(storeId, filter, TradeType.PURCHASE, TradeStatus.PURCHASED, BalanceEntryType.PURCHASE));
         }
+        if (filter.includes(BalanceEntryType.PAYMENT)) {
+            entries.addAll(trades(storeId, filter, TradeType.PAYMENT, TradeStatus.PAID, BalanceEntryType.PAYMENT));
+        }
         if (filter.includes(BalanceEntryType.LIVE)) {
             entries.addAll(endedLives(storeId, filter));
         }
@@ -66,10 +69,13 @@ public class BalanceService {
 
     private List<BalanceEntryResponse> trades(UUID storeId, BalanceFilter filter, TradeType type,
                                               TradeStatus status, BalanceEntryType entryType) {
-        TradeFilter tradeFilter = new TradeFilter(filter.from(), filter.to(), null, type, status, null, null);
+        TradeFilter tradeFilter = new TradeFilter(filter.from(), filter.to(), null, type, status, null, null,
+                filter.tagIds());
         return tradeService.list(storeId, tradeFilter).stream()
-                .map(trade -> new BalanceEntryResponse(
-                        trade.id(), entryType, trade.quantity(), trade.price(), trade.createdAt()))
+                // Los pagos no tienen cantidad de prendas: cuentan como 0.
+                .map(trade -> new BalanceEntryResponse(trade.id(), entryType,
+                        trade.quantity() == null ? 0 : trade.quantity(), trade.price(), trade.createdAt(),
+                        trade.tagIds()))
                 .toList();
     }
 
@@ -78,7 +84,7 @@ public class BalanceService {
         LiveFilter liveFilter = new LiveFilter(filter.from(), filter.to(),
                 null, null, null, null, null, null, null, null, null);
         List<LiveSummaryResponse> lives = liveService.list(storeId, liveFilter).stream()
-                .filter(live -> live.status() == LiveStatus.ENDED)
+                .filter(live -> live.status() == LiveStatus.ENDED && filter.matchesTags(live.tagIds()))
                 .toList();
         Map<UUID, LiveTotals> collected = orderRepository
                 .collectedTotalsByLive(storeId, lives.stream().map(LiveSummaryResponse::id).toList()).stream()
@@ -87,7 +93,8 @@ public class BalanceService {
                 .map(live -> {
                     LiveTotals paid = collected.getOrDefault(live.id(), LiveTotals.empty(live.id()));
                     return new BalanceEntryResponse(
-                            live.id(), BalanceEntryType.LIVE, paid.units(), paid.totalAmount(), live.createdAt());
+                            live.id(), BalanceEntryType.LIVE, paid.units(), paid.totalAmount(), live.createdAt(),
+                            live.tagIds());
                 })
                 .toList();
     }
@@ -98,7 +105,7 @@ public class BalanceService {
         long sold = 0;
         long bought = 0;
         for (BalanceEntryResponse entry : entries) {
-            if (entry.type() == BalanceEntryType.PURCHASE) {
+            if (entry.type().subtracts()) {
                 purchases = purchases.add(entry.amount());
                 bought += entry.quantity();
             } else {

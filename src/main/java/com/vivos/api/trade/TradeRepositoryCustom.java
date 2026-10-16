@@ -5,6 +5,6 @@ import org.springframework.data.jpa.domain.Specification;
 /** Consultas de {@link TradeRepository} que Spring Data no deriva solo. */
 public interface TradeRepositoryCustom {
 
-    /** Totales (en la base, sin cargar los registros) de las compras/ventas que cumplen {@code specification}. */
+    /** Totales (en la base, sin cargar los registros) de los movimientos que cumplen {@code specification}. */
     TradeSummaryResponse summarize(Specification<Trade> specification);
 }

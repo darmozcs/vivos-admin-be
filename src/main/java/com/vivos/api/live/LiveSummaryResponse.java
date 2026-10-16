@@ -4,6 +4,7 @@ import com.vivos.api.order.LiveTotals;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 /** {@code LiveSummary} del front: el vivo mas los totales de venta calculados por el servidor. */
@@ -20,7 +21,8 @@ public record LiveSummaryResponse(
         Instant createdAt,
         long buyers,
         long units,
-        BigDecimal totalAmount
+        BigDecimal totalAmount,
+        List<UUID> tagIds
 ) {
 
     public static LiveSummaryResponse from(Live live, LiveTotals totals) {
@@ -38,7 +40,8 @@ public record LiveSummaryResponse(
                 live.getCreatedAt(),
                 safe.buyers(),
                 safe.units(),
-                safe.totalAmount()
+                safe.totalAmount(),
+                live.getTagIds().stream().sorted().toList()
         );
     }
 }

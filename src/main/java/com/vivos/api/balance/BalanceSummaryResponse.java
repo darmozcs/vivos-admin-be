@@ -3,7 +3,7 @@ package com.vivos.api.balance;
 import java.math.BigDecimal;
 
 /**
- * Totales de las filas del balance. Ventas incluye los vivos.
+ * Totales de las filas del balance. Ventas incluye los vivos y compras incluye los pagos.
  * {@code balance} = ventas - compras; {@code netQuantity} = prendas compradas - vendidas.
  */
 public record BalanceSummaryResponse(

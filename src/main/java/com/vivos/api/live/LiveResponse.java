@@ -1,6 +1,7 @@
 package com.vivos.api.live;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 /** {@code Live} del front (models/live.ts). */
@@ -14,7 +15,8 @@ public record LiveResponse(
         Instant endedAt,
         long accumulatedMs,
         Instant runningSince,
-        Instant createdAt
+        Instant createdAt,
+        List<UUID> tagIds
 ) {
 
     public static LiveResponse from(Live live) {
@@ -28,7 +30,8 @@ public record LiveResponse(
                 live.getEndedAt(),
                 live.getAccumulatedMs(),
                 live.getRunningSince(),
-                live.getCreatedAt()
+                live.getCreatedAt(),
+                live.getTagIds().stream().sorted().toList()
         );
     }
 }

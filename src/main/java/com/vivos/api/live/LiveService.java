@@ -5,6 +5,7 @@ import com.vivos.api.common.NotFoundException;
 import com.vivos.api.order.LiveTotals;
 import com.vivos.api.order.OrderRepository;
 import com.vivos.api.store.StoreRepository;
+import com.vivos.api.tag.TagService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,13 +35,15 @@ public class LiveService {
     private final LiveRepository liveRepository;
     private final OrderRepository orderRepository;
     private final StoreRepository storeRepository;
+    private final TagService tagService;
     private final ZoneId timezone;
 
     LiveService(LiveRepository liveRepository, OrderRepository orderRepository, StoreRepository storeRepository,
-                @Value("${vivos.timezone:America/Montevideo}") String timezone) {
+                TagService tagService, @Value("${vivos.timezone:America/Montevideo}") String timezone) {
         this.liveRepository = liveRepository;
         this.orderRepository = orderRepository;
         this.storeRepository = storeRepository;
+        this.tagService = tagService;
         this.timezone = ZoneId.of(timezone);
     }
 
@@ -91,7 +94,17 @@ public class LiveService {
         String title = request.title() == null ? "" : request.title().trim();
         storeRepository.lockById(storeId);
         Live live = new Live(storeId, liveRepository.findMaxNumber(storeId) + 1, title, PLATFORM);
+        live.setTagIds(tagService.requireStoreTags(storeId, request.tagIds()));
         return LiveResponse.from(liveRepository.saveAndFlush(live));
+    }
+
+    /** Reemplaza las etiquetas del vivo (en cualquier estado). */
+    @Transactional
+    public LiveSummaryResponse updateTags(UUID storeId, UUID id, UpdateLiveTagsRequest request) {
+        Live live = findLive(storeId, id);
+        live.setTagIds(tagService.requireStoreTags(storeId, request.tagIds()));
+        liveRepository.saveAndFlush(live);
+        return get(storeId, id);
     }
 
     @Transactional

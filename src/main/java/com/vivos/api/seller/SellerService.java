@@ -16,7 +16,7 @@ import java.util.UUID;
 public class SellerService {
 
     public static final String SELLER_NOT_FOUND = "Vendedor no encontrado";
-    static final String SELLER_HAS_TRADES = "No se puede eliminar un vendedor con compras/ventas";
+    static final String SELLER_HAS_TRADES = "No se puede eliminar un vendedor con movimientos";
     private static final int ACCOUNT_MAX = 100;
     private static final Sort LIST_ORDER = Sort.by("createdAt", "id");
 
@@ -50,7 +50,7 @@ public class SellerService {
         return SellerResponse.from(sellerRepository.saveAndFlush(seller));
     }
 
-    /** Los vendedores con compras/ventas no se borran, para mantener el historial. */
+    /** Los vendedores con movimientos no se borran, para mantener el historial. */
     @Transactional
     public void delete(UUID storeId, UUID id) {
         Seller seller = findSeller(storeId, id);

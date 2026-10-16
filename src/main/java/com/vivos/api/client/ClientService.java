@@ -18,7 +18,7 @@ public class ClientService {
 
     public static final String CLIENT_NOT_FOUND = "Clienta no encontrada";
     static final String CLIENT_HAS_PURCHASES = "No se puede eliminar una clienta con compras";
-    static final String CLIENT_HAS_TRADES = "No se puede eliminar una clienta con compras/ventas";
+    static final String CLIENT_HAS_TRADES = "No se puede eliminar una clienta con movimientos";
     private static final String ACCOUNT_PREFIX = "@";
     private static final int ACCOUNT_MAX = 100;
     public static final String EMAIL_INVALID = "El correo no es valido";
@@ -59,7 +59,7 @@ public class ClientService {
     }
 
     /**
-     * Las clientas con compras (ventas con items) o con compras/ventas no se borran, para mantener el historial.
+     * Las clientas con compras (ventas con items) o con movimientos no se borran, para mantener el historial.
      * Las ventas vacias de la clienta se eliminan junto con ella.
      */
     @Transactional

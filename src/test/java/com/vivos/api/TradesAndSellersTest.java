@@ -13,7 +13,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** Vendedores y compras/ventas del negocio. */
+/** Vendedores y movimientos del negocio (ventas, compras y pagos). */
 class TradesAndSellersTest extends AbstractIntegrationTest {
 
     private String idOf(MockHttpServletRequestBuilder request, TestStore store, String body) throws Exception {
@@ -120,12 +120,12 @@ class TradesAndSellersTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(purchase(sellerId, "PENDING", 1, "1")))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.detail").value("No se puede cambiar el tipo de una compra/venta"));
+                .andExpect(jsonPath("$.detail").value("No se puede cambiar el tipo de un movimiento"));
         mockMvc.perform(post("/trades").with(admin(store))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(sale(clientId, "PENDING", 1, "1")))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.detail").value("El estado no corresponde al tipo de compra/venta"));
+                .andExpect(jsonPath("$.detail").value("El estado no corresponde al tipo de movimiento"));
         mockMvc.perform(post("/trades").with(admin(store))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"type\":\"SALE\",\"status\":\"SOLD\",\"quantity\":1,\"price\":1,\"sellerId\":\"" + sellerId + "\"}"))
@@ -144,10 +144,10 @@ class TradesAndSellersTest extends AbstractIntegrationTest {
 
         mockMvc.perform(delete("/sellers/{id}", sellerId).with(admin(store)))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.detail").value("No se puede eliminar un vendedor con compras/ventas"));
+                .andExpect(jsonPath("$.detail").value("No se puede eliminar un vendedor con movimientos"));
         mockMvc.perform(delete("/clients/{id}", clientId).with(admin(store)))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.detail").value("No se puede eliminar una clienta con compras/ventas"));
+                .andExpect(jsonPath("$.detail").value("No se puede eliminar una clienta con movimientos"));
 
         mockMvc.perform(delete("/trades/{id}", purchaseId).with(admin(store)))
                 .andExpect(status().isNoContent());
@@ -173,5 +173,62 @@ class TradesAndSellersTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.balance").value(0));
         mockMvc.perform(delete("/trades/{id}", otherTradeId).with(admin(store)))
                 .andExpect(status().isNotFound());
+    }
+
+    private String payment(String sellerId, String status, String price) {
+        return "{\"type\":\"PAYMENT\",\"status\":\"" + status + "\",\"price\":" + price
+                + ",\"sellerId\":\"" + sellerId + "\"}";
+    }
+
+    @Test
+    void paymentsHaveNoQuantityAndSubtractWithPurchases() throws Exception {
+        TestStore store = createStore("Tienda pagos", true);
+        String sellerId = idOf(post("/sellers"), store, "{\"fullName\":\"Vendedor\"}");
+        String clientId = idOf(post("/clients"), store, "{\"fullName\":\"Clienta\"}");
+
+        idOf(post("/trades"), store, sale(clientId, "SOLD", 10, "5000"));
+        idOf(post("/trades"), store, purchase(sellerId, "PURCHASED", 4, "1000"));
+        // La cantidad de un pago se ignora.
+        String paymentId = idOf(post("/trades"), store,
+                "{\"type\":\"PAYMENT\",\"status\":\"PENDING\",\"quantity\":9,\"price\":1500,\"sellerId\":\"" + sellerId + "\"}");
+
+        mockMvc.perform(get("/trades").param("type", "PAYMENT").with(admin(store)))
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].quantity").doesNotExist())
+                .andExpect(jsonPath("$[0].sellerName").value("Vendedor"));
+        mockMvc.perform(get("/trades/summary").with(admin(store)))
+                .andExpect(jsonPath("$.salesTotal").value(5000))
+                .andExpect(jsonPath("$.purchasesTotal").value(2500))
+                .andExpect(jsonPath("$.balance").value(2500))
+                .andExpect(jsonPath("$.purchasesCount").value(2))
+                .andExpect(jsonPath("$.purchasesQuantity").value(4));
+        mockMvc.perform(get("/trades/summary").param("type", "PAYMENT").with(admin(store)))
+                .andExpect(jsonPath("$.purchasesTotal").value(1500))
+                .andExpect(jsonPath("$.purchasesQuantity").value(0));
+
+        mockMvc.perform(patch("/trades/{id}", paymentId).with(admin(store))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payment(sellerId, "PAID", "1500")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("PAID"));
+        mockMvc.perform(post("/trades").with(admin(store))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payment(sellerId, "PURCHASED", "1")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("El estado no corresponde al tipo de movimiento"));
+        mockMvc.perform(post("/trades").with(admin(store))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"type\":\"PAYMENT\",\"status\":\"PAID\",\"price\":1,\"clientId\":\"" + clientId + "\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("El pago necesita un vendedor"));
+        // Compras y ventas siguen exigiendo cantidad.
+        mockMvc.perform(post("/trades").with(admin(store))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"type\":\"PURCHASE\",\"status\":\"PENDING\",\"price\":1,\"sellerId\":\"" + sellerId + "\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("La cantidad es obligatoria"));
+        mockMvc.perform(delete("/sellers/{id}", sellerId).with(admin(store)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.detail").value("No se puede eliminar un vendedor con movimientos"));
     }
 }

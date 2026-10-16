@@ -1,19 +1,23 @@
 package com.vivos.api.trade;
 
-/** Estado de la compra/venta. Cada tipo tiene sus propios estados. */
+import java.util.EnumSet;
+import java.util.Set;
+
+/** Estado del movimiento. Cada tipo tiene sus propios estados (Pendiente lo comparten compra y pago). */
 public enum TradeStatus {
-    PUBLISHED(TradeType.SALE),
-    SOLD(TradeType.SALE),
-    PENDING(TradeType.PURCHASE),
-    PURCHASED(TradeType.PURCHASE);
+    PUBLISHED(EnumSet.of(TradeType.SALE)),
+    SOLD(EnumSet.of(TradeType.SALE)),
+    PENDING(EnumSet.of(TradeType.PURCHASE, TradeType.PAYMENT)),
+    PURCHASED(EnumSet.of(TradeType.PURCHASE)),
+    PAID(EnumSet.of(TradeType.PAYMENT));
 
-    private final TradeType type;
+    private final Set<TradeType> types;
 
-    TradeStatus(TradeType type) {
-        this.type = type;
+    TradeStatus(Set<TradeType> types) {
+        this.types = types;
     }
 
     public boolean allowedFor(TradeType tradeType) {
-        return type == tradeType;
+        return types.contains(tradeType);
     }
 }

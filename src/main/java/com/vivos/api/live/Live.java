@@ -1,17 +1,22 @@
 package com.vivos.api.live;
 
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 
 import java.time.Instant;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
@@ -62,6 +67,12 @@ public class Live {
 
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
+
+    /** Etiquetas (ids de viv_tag); se reemplazan enteras al guardar. */
+    @ElementCollection
+    @CollectionTable(name = "viv_live_tag", joinColumns = @JoinColumn(name = "live_id"))
+    @Column(name = "tag_id", nullable = false)
+    private Set<UUID> tagIds = new LinkedHashSet<>();
 
     protected Live() {
     }
@@ -161,5 +172,14 @@ public class Live {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    public Set<UUID> getTagIds() {
+        return Set.copyOf(tagIds);
+    }
+
+    public void setTagIds(Set<UUID> tagIds) {
+        this.tagIds.clear();
+        this.tagIds.addAll(tagIds);
     }
 }

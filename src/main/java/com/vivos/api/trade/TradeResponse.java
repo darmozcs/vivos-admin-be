@@ -4,6 +4,7 @@ import com.vivos.api.order.Amounts;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 /** {@code sellerName} y {@code clientName} vienen resueltos para mostrar la contraparte sin cruzar datos. */
@@ -11,7 +12,7 @@ public record TradeResponse(
         UUID id,
         TradeType type,
         TradeStatus status,
-        int quantity,
+        Integer quantity,
         BigDecimal price,
         String note,
         UUID sellerId,
@@ -19,7 +20,8 @@ public record TradeResponse(
         UUID clientId,
         String clientName,
         Instant createdAt,
-        Instant updatedAt
+        Instant updatedAt,
+        List<UUID> tagIds
 ) {
 
     static TradeResponse from(Trade trade, String sellerName, String clientName) {
@@ -35,7 +37,8 @@ public record TradeResponse(
                 trade.getClientId(),
                 clientName,
                 trade.getCreatedAt(),
-                trade.getUpdatedAt()
+                trade.getUpdatedAt(),
+                trade.getTagIds().stream().sorted().toList()
         );
     }
 }

@@ -1,21 +1,26 @@
 package com.vivos.api.trade;
 
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.UUID;
 
-/** Compra o venta del negocio. Una venta tiene clienta y una compra tiene vendedor (nunca ambos). */
+/** Movimiento del negocio: una venta tiene clienta; una compra o un pago, vendedor (nunca ambos). */
 @Entity
 @Table(name = "viv_trade")
 public class Trade {
@@ -35,8 +40,9 @@ public class Trade {
     @Column(nullable = false, length = 20)
     private TradeStatus status;
 
-    @Column(nullable = false)
-    private int quantity;
+    /** Cantidad de prendas; null en los pagos. */
+    @Column
+    private Integer quantity;
 
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal price;
@@ -55,6 +61,12 @@ public class Trade {
 
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
+
+    /** Etiquetas (ids de viv_tag); se reemplazan enteras al guardar. */
+    @ElementCollection
+    @CollectionTable(name = "viv_trade_tag", joinColumns = @JoinColumn(name = "trade_id"))
+    @Column(name = "tag_id", nullable = false)
+    private Set<UUID> tagIds = new LinkedHashSet<>();
 
     protected Trade() {
     }
@@ -96,11 +108,11 @@ public class Trade {
         this.status = status;
     }
 
-    public int getQuantity() {
+    public Integer getQuantity() {
         return quantity;
     }
 
-    public void setQuantity(int quantity) {
+    public void setQuantity(Integer quantity) {
         this.quantity = quantity;
     }
 
@@ -142,5 +154,14 @@ public class Trade {
 
     public Instant getUpdatedAt() {
         return updatedAt;
+    }
+
+    public Set<UUID> getTagIds() {
+        return Set.copyOf(tagIds);
+    }
+
+    public void setTagIds(Set<UUID> tagIds) {
+        this.tagIds.clear();
+        this.tagIds.addAll(tagIds);
     }
 }

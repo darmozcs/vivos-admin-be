@@ -2,6 +2,7 @@ package com.vivos.api.balance;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 /** Una fila del balance. {@code amount} va siempre positivo: el signo depende de {@code type}. */
@@ -10,6 +11,7 @@ public record BalanceEntryResponse(
         BalanceEntryType type,
         long quantity,
         BigDecimal amount,
-        Instant createdAt
+        Instant createdAt,
+        List<UUID> tagIds
 ) {
 }

@@ -1,6 +1,7 @@
 package com.vivos.api.trade;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -13,6 +14,7 @@ import java.util.UUID;
  * @param status   igual
  * @param sellerId igual
  * @param clientId igual
+ * @param tagIds   tiene alguna de esas etiquetas
  */
 public record TradeFilter(
         LocalDate from,
@@ -21,6 +23,7 @@ public record TradeFilter(
         TradeType type,
         TradeStatus status,
         UUID sellerId,
-        UUID clientId
+        UUID clientId,
+        List<UUID> tagIds
 ) {
 }

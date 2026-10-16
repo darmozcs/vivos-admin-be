@@ -32,14 +32,17 @@ class TradeRepositoryCustomImpl implements TradeRepositoryCustom {
         Totals sales = Totals.EMPTY;
         Totals purchases = Totals.EMPTY;
         for (Tuple row : entityManager.createQuery(query).getResultList()) {
+            // Los pagos no tienen cantidad: su suma de prendas viene null.
+            Object quantity = row.get(2);
             Totals totals = new Totals(
                     ((Number) row.get(1)).longValue(),
-                    ((Number) row.get(2)).longValue(),
+                    quantity == null ? 0 : ((Number) quantity).longValue(),
                     new BigDecimal(row.get(3).toString()));
             if (row.get(0) == TradeType.SALE) {
-                sales = totals;
+                sales = sales.plus(totals);
             } else {
-                purchases = totals;
+                // Compras y pagos restan juntos.
+                purchases = purchases.plus(totals);
             }
         }
         return new TradeSummaryResponse(
@@ -54,5 +57,9 @@ class TradeRepositoryCustomImpl implements TradeRepositoryCustom {
 
     private record Totals(long count, long quantity, BigDecimal amount) {
         static final Totals EMPTY = new Totals(0, 0, BigDecimal.ZERO);
+
+        Totals plus(Totals other) {
+            return new Totals(count + other.count, quantity + other.quantity, amount.add(other.amount));
+        }
     }
 }

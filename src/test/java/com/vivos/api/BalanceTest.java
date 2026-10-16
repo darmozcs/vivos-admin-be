@@ -61,6 +61,32 @@ class BalanceTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void paidPaymentsSubtractLikePurchases() throws Exception {
+        TestStore store = createStore("Tienda balance pagos", true);
+        String clientId = idOf(post("/clients"), store, "{\"fullName\":\"Clienta\"}");
+        String sellerId = idOf(post("/sellers"), store, "{\"fullName\":\"Vendedor\"}");
+        trade(store, "SALE", "SOLD", 10, 5000, clientId);
+        trade(store, "PURCHASE", "PURCHASED", 4, 1000, sellerId);
+        idOf(post("/trades"), store,
+                "{\"type\":\"PAYMENT\",\"status\":\"PAID\",\"price\":1500,\"sellerId\":\"" + sellerId + "\"}");
+        idOf(post("/trades"), store,
+                "{\"type\":\"PAYMENT\",\"status\":\"PENDING\",\"price\":9999,\"sellerId\":\"" + sellerId + "\"}");
+
+        // El pago pendiente no cuenta; el pagado resta junto con la compra y no suma prendas.
+        mockMvc.perform(get("/balance").with(admin(store)))
+                .andExpect(jsonPath("$.entries", hasSize(3)))
+                .andExpect(jsonPath("$.entries[0].type").value("PAYMENT"))
+                .andExpect(jsonPath("$.entries[0].quantity").value(0))
+                .andExpect(jsonPath("$.summary.purchasesTotal").value(2500))
+                .andExpect(jsonPath("$.summary.balance").value(2500))
+                .andExpect(jsonPath("$.summary.boughtQuantity").value(4))
+                .andExpect(jsonPath("$.summary.netQuantity").value(-6));
+        mockMvc.perform(get("/balance").param("type", "PAYMENT").with(admin(store)))
+                .andExpect(jsonPath("$.entries", hasSize(1)))
+                .andExpect(jsonPath("$.summary.balance").value(-1500));
+    }
+
+    @Test
     void balanceJoinsEndedLivesSoldSalesAndPurchasedPurchases() throws Exception {
         TestStore store = createStore("Tienda balance", true);
         String clientId = idOf(post("/clients"), store, "{\"fullName\":\"Clienta\"}");

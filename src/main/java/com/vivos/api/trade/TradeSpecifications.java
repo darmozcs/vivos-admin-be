@@ -1,7 +1,9 @@
 package com.vivos.api.trade;
 
 import com.vivos.api.common.BadRequestException;
+import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Subquery;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.time.Instant;
@@ -52,6 +54,13 @@ final class TradeSpecifications {
             }
             if (filter.clientId() != null) {
                 predicates.add(cb.equal(root.get("clientId"), filter.clientId()));
+            }
+            if (filter.tagIds() != null && !filter.tagIds().isEmpty()) {
+                // Subconsulta (no join) para no duplicar filas en el listado ni en los totales.
+                Subquery<UUID> tagged = query.subquery(UUID.class);
+                Join<Trade, UUID> tag = tagged.correlate(root).join("tagIds");
+                tagged.select(tag).where(tag.in(filter.tagIds()));
+                predicates.add(cb.exists(tagged));
             }
             return cb.and(predicates.toArray(Predicate[]::new));
         };
