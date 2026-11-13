@@ -35,6 +35,9 @@ vivos:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:https://darmozsc.duckdns.org}
   # Zona horaria de la tienda: los filtros de fecha de GET /orders y GET /lives usan dias de esta zona.
   timezone: ${VIVOS_TIMEZONE:America/Montevideo}
+  bot:
+    # API key con la que el bot de WhatsApp (darmoz-whatsapp) llama a /bot/**. Vacia: /bot cerrado.
+    api-key: ${VIVOS_BOT_API_KEY:}
 
 management:
   endpoints:

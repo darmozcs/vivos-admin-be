@@ -34,6 +34,10 @@ public class Client {
     @Column(nullable = false, length = 30)
     private String phone = "";
 
+    /** {@link PhoneNumbers#normalize} del telefono: lo usa el bot de WhatsApp para identificarla. */
+    @Column(name = "phone_normalized", nullable = false, length = 30)
+    private String phoneNormalized = "";
+
     @Column(nullable = false, length = 150)
     private String email = "";
 
@@ -103,6 +107,11 @@ public class Client {
 
     public void setPhone(String phone) {
         this.phone = phone;
+        this.phoneNormalized = PhoneNumbers.normalize(phone);
+    }
+
+    public String getPhoneNormalized() {
+        return phoneNormalized;
     }
 
     public String getEmail() {

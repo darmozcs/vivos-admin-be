@@ -26,6 +26,10 @@ public class Store {
     @Column(nullable = false)
     private boolean active = true;
 
+    /** WABA ID de Meta: la cuenta de WhatsApp Business de la tienda (la usa el bot). */
+    @Column(name = "whatsapp_waba_id", length = 30)
+    private String whatsappWabaId;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -62,6 +66,14 @@ public class Store {
 
     public void setActive(boolean active) {
         this.active = active;
+    }
+
+    public String getWhatsappWabaId() {
+        return whatsappWabaId;
+    }
+
+    public void setWhatsappWabaId(String whatsappWabaId) {
+        this.whatsappWabaId = whatsappWabaId;
     }
 
     public Instant getCreatedAt() {

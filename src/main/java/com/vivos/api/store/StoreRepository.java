@@ -27,4 +27,8 @@ public interface StoreRepository extends JpaRepository<Store, UUID> {
             order by s.createdAt desc
             """)
     List<Object[]> findAllWithAdmin();
+
+    Optional<Store> findByWhatsappWabaId(String whatsappWabaId);
+
+    boolean existsByWhatsappWabaIdAndIdNot(String whatsappWabaId, UUID id);
 }

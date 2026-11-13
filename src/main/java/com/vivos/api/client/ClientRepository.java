@@ -3,6 +3,7 @@ package com.vivos.api.client;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -15,4 +16,7 @@ public interface ClientRepository extends JpaRepository<Client, UUID>, JpaSpecif
     Optional<Client> findByIdAndStoreId(UUID id, UUID storeId);
 
     boolean existsByIdAndStoreId(UUID id, UUID storeId);
+
+    /** Clientas de la tienda con ese telefono ({@link PhoneNumbers#normalize}), la mas antigua primero. */
+    List<Client> findByStoreIdAndPhoneNormalizedOrderByCreatedAtAscIdAsc(UUID storeId, String phoneNormalized);
 }

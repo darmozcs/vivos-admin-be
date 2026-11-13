@@ -3,6 +3,7 @@ package com.vivos.api.config;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
@@ -20,6 +21,7 @@ import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -56,7 +58,31 @@ public class SecurityConfig {
     @Value("${vivos.cors.allowed-origins}")
     private String allowedOrigins;
 
+    @Value("${vivos.bot.api-key:}")
+    private String botApiKey;
+
+    /**
+     * {@code /bot/**}: lo llama el bot de WhatsApp (darmoz-whatsapp), servidor a servidor,
+     * con la API key. No acepta JWT: un token de admin no sirve aca, y la API key no sirve
+     * en el resto de la API.
+     */
     @Bean
+    @Order(1)
+    SecurityFilterChain botSecurityFilterChain(HttpSecurity http) throws Exception {
+        http
+                .securityMatcher("/bot/**")
+                .csrf(csrf -> csrf.disable())
+                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .addFilterBefore(new BotApiKeyFilter(botApiKey), AnonymousAuthenticationFilter.class)
+                .authorizeHttpRequests(auth -> auth.anyRequest().hasRole(BotApiKeyFilter.ROLE))
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(new ProblemDetailAuthenticationEntryPoint())
+                        .accessDeniedHandler(new ProblemDetailAccessDeniedHandler()));
+        return http.build();
+    }
+
+    @Bean
+    @Order(2)
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         ProblemDetailAuthenticationEntryPoint entryPoint = new ProblemDetailAuthenticationEntryPoint();
         ProblemDetailAccessDeniedHandler accessDeniedHandler = new ProblemDetailAccessDeniedHandler();
